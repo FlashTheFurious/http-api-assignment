@@ -1,32 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <title>Our simple HTTP server</title>
-  <link rel="stylesheet" type="text/css" href="/style.css">
-  
-  <script>
+  <head>
+    <title>Our simple HTTP server</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
 
-  </script>
-</head>
-<body>
-  <section id="top">
-    <h3>Status Code Tests</h3>
-    <select id="page">
-      <option value="/success">Success</option>
-      <option value="/badRequest">Bad Request</option>
-      <option value="/unauthorized">Unauthorized</option>
-      <option value="/forbidden">Forbidden</option>
-      <option value="/internal">Internal</option>
-      <option value="/notImplemented">Not Implemented</option>
-      <option value="/notFound">Not Found</option>
-    </select>
-    <select id="type">
-      <option value="application/json">JSON</option>
-      <option value="text/xml">XML</option>
-    </select>
-    <button id="send">Send</button>
-  </section>
-  <section id="content">
-  </section>
-</body>
+    <script>
+                // Client-side JavaScript to handle the request and update the DOM
+        document.addEventListener('DOMContentLoaded', function() {
+        const sendButton = document.getElementById('send');
+        const contentSection = document.getElementById('content');
+
+        sendButton.addEventListener('click', function() {
+        const pageValue = document.getElementById('page').value;
+        const typeValue = document.getElementById('type').value;
+
+        // Fetch request with proper headers
+        fetch(pageValue, {
+          headers: {
+            'Accept': typeValue
+          }
+        })
+        .then(response => {
+          const contentType = response.headers.get('content-type');
+
+          if (contentType.includes('application/json')) {
+            return response.json().then(data => {
+              // Check if the data includes title and message to prevent 'undefined' values
+              const title = data.title || 'No Title';
+              const message = data.message || 'No Message';
+              const formattedJson = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+              contentSection.innerHTML = `<h2>${title}</h2><p>${message}</p>${formattedJson}`;
+              console.log(formattedJson); // Print raw JSON
+            });
+          } else if (contentType.includes('text/xml')) {
+            return response.text().then(text => {
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(text, "text/xml");
+              const titleElements = xmlDoc.getElementsByTagName('title');
+              const messageElements = xmlDoc.getElementsByTagName('message');
+              const title = titleElements.length > 0 ? titleElements[0].textContent : 'No Title';
+              const message = messageElements.length > 0 ? messageElements[0].textContent : 'No Message';
+              contentSection.innerHTML = `<h2>${title}</h2><p>${message}</p><pre>${text}</pre>`;
+              console.log(text); // Print raw XML
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          contentSection.innerHTML = '<p>Error loading the response</p>';
+        });
+      });
+                });
+    </script>
+  </head>
+  <body>
+    <section id="top">
+      <h3>Status Code Tests</h3>
+      <select id="page">
+        <option value="/success">Success</option>
+        <option value="/badRequest">Bad Request</option>
+        <option value="/unauthorized">Unauthorized</option>
+        <option value="/forbidden">Forbidden</option>
+        <option value="/internal">Internal</option>
+        <option value="/notImplemented">Not Implemented</option>
+        <option value="/notFound">Not Found</option>
+      </select>
+      <select id="type">
+        <option value="application/json">JSON</option>
+        <option value="text/xml">XML</option>
+      </select>
+      <button id="send">Send</button>
+    </section>
+    <section id="content"></section>
+  </body>
 </html>
